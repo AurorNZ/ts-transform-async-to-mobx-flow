@@ -1,0 +1,13 @@
+{
+  "compilerOptions": {
+    "target": "es2015",
+    "moduleResolution": "node",
+    "lib": ["es6", "dom", "esnext.asynciterable"],
+    "experimentalDecorators": true,
+    "strict": true,
+    "esModuleInterop": true,
+    "outDir": "lib",
+    "plugins": [{ "transform": "ts-transform-async-to-mobx-flow", "type": "config" }]
+  },
+  "exclude": ["node_modules"]
+}

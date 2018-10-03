@@ -1,0 +1,46 @@
+{
+  "name": "ts-transform-async-to-mobx-flow",
+  "version": "0.0.1",
+  "description": "Typescript transformer for converting async functions into generators wrapped with mobx.flow",
+  "keywords": [
+    "mobx",
+    "typescript",
+    "typescript-transformer"
+  ],
+  "author": "Auror <developers@auror.co>",
+  "homepage": "https://github.com/aurornz/ts-transform-async-to-mobx-flow#readme",
+  "license": "MIT",
+  "main": "lib/index.js",
+  "typings": "lib/index.d.ts",
+  "directories": {
+    "lib": "lib",
+    "src": "src",
+    "test": "__tests__"
+  },
+  "files": [
+    "lib",
+    "transformToMobxFlow.d.ts"
+  ],
+  "repository": "git@github.com:aurornz/ts-transform-async-to-mobx-flow.git",
+  "scripts": {
+    "build": "rm -rf lib && tsc",
+    "test": "jest"
+  },
+  "bugs": {
+    "url": "https://github.com/aurornz/ts-transform-async-to-mobx-flow/issues"
+  },
+  "jest": {
+    "transform": {
+      "^.+\\.tsx?$": "ts-jest"
+    },
+    "testRegex": "(/test/.|\\.(test|spec))\\.(jsx?|tsx?)$",
+    "moduleFileExtensions": [
+      "ts",
+      "tsx",
+      "js",
+      "jsx",
+      "json",
+      "node"
+    ]
+  }
+}

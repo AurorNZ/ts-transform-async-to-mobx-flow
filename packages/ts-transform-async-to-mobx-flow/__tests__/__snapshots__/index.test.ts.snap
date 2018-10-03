@@ -1,0 +1,79 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`Converts function marked as transformToMobxFlow 1`] = `
+"import { flow as flow_1 } from \\"mobx\\";
+/// <reference path=\\"../../transformToMobxFlow.d.ts\\" />
+export const fn = (input) => { return flow_1(function* fn() {
+    return yield Promise.resolve(input);
+}).call(this); };
+export const fn2 = function test(input) { return flow_1(function* test() {
+    return yield Promise.resolve(input);
+}).call(this); };
+export const fn3 = function (input) { return flow_1(function* fn3() {
+    return yield Promise.resolve(input);
+}).call(this); };
+export class Test {
+    constructor() {
+        this.test = 0;
+        this.funcBound = () => { return flow_1(function* funcBound() {
+            this.test = 5;
+            yield Promise.resolve(100);
+        }).call(this); };
+        this.funcNonBound = function () { return flow_1(function* funcNonBound() {
+            this.test = 5;
+            yield Promise.resolve(100);
+        }).call(this); };
+        var nestedFlow = async () => {
+            var anotherNestedFlow = async () => {
+                this.test = 5;
+                await Promise.resolve(100);
+            };
+            this.test = 5;
+            await anotherNestedFlow();
+        };
+    }
+    func() { return flow_1(function* func() {
+        this.test = 5;
+        yield Promise.resolve(100);
+    }).call(this); }
+}
+__decorate([
+    randomDecorator
+], Test.prototype, \\"funcNonBound\\", void 0);
+"
+`;
+
+exports[`Does not convert function not marked as transformToMobxFlow 1`] = `
+"export async function fn(input) {
+    await this.delay(this.input);
+}
+export const fn2 = async (input) => {
+    await this.delay(this.input);
+};
+export class Test {
+    constructor() {
+        this.test = 0;
+        this.funcBound = async () => {
+            this.test = 5;
+            await Promise.resolve(100);
+        };
+        this.funcNonBound = async function () {
+            this.test = 5;
+            await Promise.resolve(100);
+        };
+        var nestedFlow = async () => {
+            var anotherNestedFlow = async () => {
+                this.test = 5;
+                await Promise.resolve(100);
+            };
+            this.test = 5;
+            await anotherNestedFlow();
+        };
+    }
+    async func() {
+        this.test = 5;
+        await Promise.resolve(100);
+    }
+}
+"
+`;
