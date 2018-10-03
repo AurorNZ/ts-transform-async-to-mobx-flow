@@ -105,7 +105,7 @@ It can be added to a `global.d.ts` file to access `transformToMobxFlow` in all t
 
 ```js
 // webpack.config.js
-const tsTransformAsyncToMobxFlow = require('ts-transform-async-to-mobx-flow');
+const tsTransformAsyncToMobxFlow = require('ts-transform-async-to-mobx-flow').default;
 
 module.exports = {
   // ...
