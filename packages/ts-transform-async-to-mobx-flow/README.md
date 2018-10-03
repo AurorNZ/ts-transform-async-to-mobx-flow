@@ -141,7 +141,7 @@ module.exports = {
 
 ```js
 // webpack.config.js
-const tsTransformAsyncToMobxFlow = require('ts-transform-async-to-mobx-flow');
+const tsTransformAsyncToMobxFlow = require('ts-transform-async-to-mobx-flow').default;
 
 module.exports = {
   // ...
@@ -162,7 +162,23 @@ module.exports = {
 
 ### With ts-jest
 
-Using custom compiler https://kulshekhar.github.io/ts-jest/user/config/compiler
+Using custom compiler, for example 'ttypescript' https://kulshekhar.github.io/ts-jest/user/config/compiler
+
+Alternatively, using `ts-jest` `astTransformers`. At the moment, there is no official documentation for `astTransformers`, but it is part of `ts-jest` API since 23.10.0 https://github.com/kulshekhar/ts-jest/blob/master/CHANGELOG.md#23100-beta3-2018-09-06
+
+```json
+// package.json
+{
+  "jest": {
+    "globals": {
+      "ts-jest": {
+        "astTransformers": [
+          "ts-transform-async-to-mobx-flow"
+        ]
+      }
+    },
+}
+```
 
 ### Configuration
 
