@@ -1,6 +1,6 @@
 {
   "name": "ts-transform-async-to-mobx-flow",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "description": "Typescript transformer for converting async functions into generators wrapped with mobx.flow",
   "keywords": [
     "mobx",
@@ -24,7 +24,8 @@
   "repository": "git@github.com:aurornz/ts-transform-async-to-mobx-flow.git",
   "scripts": {
     "build": "rm -rf lib && tsc",
-    "test": "jest"
+    "test": "jest",
+    "prepare": "cp ../../README.md ./README.md"
   },
   "bugs": {
     "url": "https://github.com/aurornz/ts-transform-async-to-mobx-flow/issues"
