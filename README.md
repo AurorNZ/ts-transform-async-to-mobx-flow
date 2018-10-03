@@ -141,7 +141,7 @@ module.exports = {
 
 ```js
 // webpack.config.js
-const tsTransformAsyncToMobxFlow = require('ts-transform-async-to-mobx-flow');
+const tsTransformAsyncToMobxFlow = require('ts-transform-async-to-mobx-flow').default;
 
 module.exports = {
   // ...
