@@ -6,6 +6,16 @@ export interface Options {
 
 const transformToMobxFlow = 'transformToMobxFlow';
 
+/** ts-jest calls this method for their astTransformers */
+export function factory() {
+  return createTransformer();
+}
+
+// ts-jest config
+export const name = 'ts-transform-async-to-mobx-flow';
+// ts-jest config: increment this each time the code is modified
+export const version = 1;
+
 /**
  * 1. Look for functions marked as @transformToMobxFlow or transformToMobxFlow(...)
  * 2. Transform them to generator functions wrapped into mobx.flow
