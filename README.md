@@ -95,9 +95,8 @@ It can be added to a `global.d.ts` file to access `transformToMobxFlow` in all t
 ```json
 {
   "compilerOptions": {
-    // ...
+    "...": "...",
     "plugins": [{ "transform": "ts-transform-async-to-mobx-flow", "type": "config" }]
-    // ...
   }
 }
 ```
@@ -134,9 +133,8 @@ module.exports = {
 ```json
 {
   "compilerOptions": {
-    // ...
+    "...": "...",
     "plugins": [{ "transform": "ts-transform-async-to-mobx-flow", "type": "config" }]
-    // ...
   }
 }
 ```
