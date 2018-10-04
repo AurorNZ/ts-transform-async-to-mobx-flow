@@ -25,7 +25,7 @@
   "scripts": {
     "build": "rm -rf lib && tsc",
     "test": "jest",
-    "prepare": "cp ../../README.md ./README.md"
+    "prepare": "npm run build && cp ../../README.md ./README.md"
   },
   "bugs": {
     "url": "https://github.com/aurornz/ts-transform-async-to-mobx-flow/issues"
