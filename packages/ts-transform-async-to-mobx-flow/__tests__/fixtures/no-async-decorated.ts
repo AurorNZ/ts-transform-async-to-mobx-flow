@@ -1,8 +1,8 @@
-export async function fn(input) {
-  await this.delay(this.input);
+export async function fn(input: string) {
+  return await Promise.resolve(input);
 }
-export const fn2 = async input => {
-  await this.delay(this.input);
+export const fn2 = async (input: string) => {
+  return await Promise.resolve(input);
 };
 export class Test {
   test: number = 0;
@@ -27,7 +27,7 @@ export class Test {
     await Promise.resolve(100);
   };
 
-  funcNonBound = async function() {
+  funcNonBound = async function(this: Test) {
     this.test = 5;
     await Promise.resolve(100);
   };

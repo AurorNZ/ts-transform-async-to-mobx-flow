@@ -1,5 +1,4 @@
 /// <reference path="../../transformToMobxFlow.d.ts" />
-
 declare let randomDecorator: any;
 
 export const fn = transformToMobxFlow(async input => {
@@ -14,14 +13,14 @@ export const fn3 = transformToMobxFlow(async function(input) {
 export class Test {
   test: number = 0;
   constructor() {
-    var nestedFlow = async () => {
-      var anotherNestedFlow = async () => {
+    var nestedFlow = transformToMobxFlow(async () => {
+      var anotherNestedFlow = transformToMobxFlow(async () => {
         this.test = 5;
         await Promise.resolve(100);
-      };
+      });
       this.test = 5;
       await anotherNestedFlow();
-    };
+    });
   }
 
   @transformToMobxFlow

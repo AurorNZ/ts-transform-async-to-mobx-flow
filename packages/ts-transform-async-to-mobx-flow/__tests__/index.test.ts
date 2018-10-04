@@ -7,18 +7,18 @@ it('Does not convert function not marked as transformToMobxFlow', () => {
   const path = require.resolve('./fixtures/no-async-decorated');
 
   const source = fs.readFileSync(path).toString('utf8');
-  const result = getOutput(source);
+  const result = getTransformedOutput(source);
 
-  expect(result.outputText).toMatchSnapshot();
+  expect(result).toMatchSnapshot();
 });
 
 it('Converts function marked as transformToMobxFlow', () => {
   const path = require.resolve('./fixtures/all-async-decorated');
 
   const source = fs.readFileSync(path).toString('utf8');
-  const result = getOutput(source);
+  const result = getTransformedOutput(source);
 
-  expect(result.outputText).toMatchSnapshot();
+  expect(result).toMatchSnapshot();
 });
 
 describe('Throw error when cannot parse body of the transformToMobxFlow', () => {
@@ -28,7 +28,9 @@ const fn = transformToMobxFlow(input => {
   this.delay(input);
 });`;
 
-    expect(() => getOutput(source)).toThrowError('Could not resolve expression as async function');
+    expect(() => getTransformedOutput(source)).toThrowError(
+      'Could not resolve expression as async function',
+    );
   });
 
   it('non-async function', () => {
@@ -37,7 +39,9 @@ const fn = transformToMobxFlow(function test (input) {
   this.delay(input);
 });`;
 
-    expect(() => getOutput(source)).toThrowError('Could not resolve expression as async function');
+    expect(() => getTransformedOutput(source)).toThrowError(
+      'Could not resolve expression as async function',
+    );
   });
 
   it('function passed as parameter', () => {
@@ -45,7 +49,9 @@ const fn = transformToMobxFlow(function test (input) {
 const fn = transformToMobxFlow(randomFunction);
 `;
 
-    expect(() => getOutput(source)).toThrowError('Could not resolve expression as async function');
+    expect(() => getTransformedOutput(source)).toThrowError(
+      'Could not resolve expression as async function',
+    );
   });
 
   describe('class context', () => {
@@ -58,7 +64,7 @@ class Test {
     this.test = 5;
   }
 }`;
-      expect(() => getOutput(source)).toThrowError(
+      expect(() => getTransformedOutput(source)).toThrowError(
         'Could not resolve expression as async function',
       );
     });
@@ -72,7 +78,7 @@ class Test {
       this.test = 5;
     };
   }`;
-      expect(() => getOutput(source)).toThrowError(
+      expect(() => getTransformedOutput(source)).toThrowError(
         'Could not resolve expression as async function',
       );
     });
@@ -84,7 +90,7 @@ class Test {
     @transformToMobxFlow
     funcNonBound = randomFunction;
   }`;
-      expect(() => getOutput(source)).toThrowError(
+      expect(() => getTransformedOutput(source)).toThrowError(
         'Could not resolve expression as async function',
       );
     });
@@ -93,45 +99,71 @@ class Test {
 
 it('Flow import does not conflict with declared variables', () => {
   const source = `
-import { flow as flow_1 } from 'mobx';
-let flow_2 = flow_1('flow2');
+import * as mobx from 'mobx';
+let mobx_1 = '';
 
 const fn = transformToMobxFlow(async input => {
-  await this.delay(input);
+  return await Promise.resolve(input);
 });
 `;
   const expectedOutput = `
-import { flow as flow_3 } from \"mobx\";
-import { flow as flow_1 } from 'mobx';
-let flow_2 = flow_1('flow2');
-const fn = (input) => { return flow_3(function* fn() {
-    yield this.delay(input);
+import * as mobx_2 from "mobx";
+import * as mobx from 'mobx';
+let mobx_1 = '';
+const fn = (input) => { return mobx_2.flow(function* fn() {
+    return yield Promise.resolve(input);
 }).call(this); };
 `;
 
-  verifyOutput(source, expectedOutput);
+  verifyOutput(getTransformedOutput(source), expectedOutput);
 });
 
-function verifyOutput(source: string, expectedOutput: string) {
-  const result = ts.transpileModule(source, {
-    compilerOptions: {
-      target: ts.ScriptTarget.ESNext,
-      noEmitHelpers: true,
-    },
-    transformers: { before: [createTransformer()] },
-  });
-  expect(removeEmptyLines(result.outputText)).toBe(removeEmptyLines(expectedOutput));
+it('Transpiled correctly to ES5', () => {
+  const source = `
+const fn = transformToMobxFlow(async input => {
+  return await Promise.resolve(input);
+});
+  `;
+    const expectedOutput = `
+var _this = this;
+var mobx = require("mobx");
+var fn = function (input) { return mobx.flow(function fn() {
+    return __generator(this, function (_a) {
+        switch (_a.label) {
+            case 0: return [4 /*yield*/, Promise.resolve(input)];
+            case 1: return [2 /*return*/, _a.sent()];
+        }
+    });
+}).call(_this); };
+  `;
+  
+    verifyOutput(getTranspiledOutput(source, ts.ScriptTarget.ES5), expectedOutput);
+})
+
+function verifyOutput(transformedOutput: string, expectedOutput: string) {
+  expect(removeEmptyLines(transformedOutput)).toBe(removeEmptyLines(expectedOutput));
 }
 
-function getOutput(source: string) {
-  const result = ts.transpileModule(source, {
+function getTranspiledOutput(sourceCode: string, target: ts.ScriptTarget): string {
+  const result = ts.transpileModule(sourceCode, {
     compilerOptions: {
-      target: ts.ScriptTarget.ESNext,
+      target: ts.ScriptTarget.ES5,
       noEmitHelpers: true,
     },
     transformers: { before: [createTransformer()] },
   });
-  return result;
+
+  return result.outputText;
+}
+
+function getTransformedOutput(sourceCode: string): string {
+  const printer = ts.createPrinter();
+
+  const source = ts.createSourceFile('', sourceCode, ts.ScriptTarget.ESNext, true);
+  const result = ts.transform(source, [createTransformer()]);
+  const transformedSourceFile = result.transformed[0];
+  const resultCode = printer.printFile(transformedSourceFile);
+  return resultCode;
 }
 
 function removeEmptyLines(input: string) {

@@ -24,120 +24,108 @@ export const version = 1;
 export default function createTransformer({
   mobxPackage = 'mobx',
 }: Partial<Options> = {}): ts.TransformerFactory<ts.SourceFile> {
-  return (context: ts.TransformationContext) => source => {
-    const flowIdenfitier = ts.createUniqueName('flow');
-    let transformed = false;
+  return context => file => visitSourceFile(mobxPackage, file, context);
+}
 
-    const visitor: ts.Visitor = node => {
-      if (checkTransformToMobxFlowCallExpression(node)) {
-        const fn = node.arguments[0];
+function visitSourceFile(
+  mobxPackage: string,
+  source: ts.SourceFile,
+  context: ts.TransformationContext,
+): ts.SourceFile {
+  const mobxNamespaceImport = ts.createFileLevelUniqueName('mobx');
+  const flowExpression = ts.createPropertyAccess(mobxNamespaceImport, ts.createIdentifier('flow'));
+  let transformed = false;
 
-        if (!isAsyncFunction(fn)) {
-          throw new Error(
-            errorMessage(`Could not resolve expression as async function: ${node.getFullText()}`),
-          );
-        }
+  const sourceWithMobxImport = addImportMobxStatement(source, mobxPackage, mobxNamespaceImport);
 
-        if (ts.isArrowFunction(fn) || ts.isFunctionExpression(fn)) {
-          transformed = true;
+  const visitor: ts.Visitor = node => {
+    if (checkTransformToMobxFlowCallExpression(node)) {
+      const fn = node.arguments[0];
 
-          const name = resolveFunctionName(node, fn);
-          const newFunctionBlock = createNewFunctionBlock(
-            flowIdenfitier,
-            name,
-            visitor(fn.body) as ts.ConciseBody,
-            context,
-          );
-
-          return transformFunction(fn, newFunctionBlock);
-        }
+      if (!isAsyncFunction(fn)) {
+        throw new Error(
+          errorMessage(`Could not resolve expression as async function: ${node.getFullText()}`),
+        );
       }
 
-      if (
-        ts.isMethodDeclaration(node) &&
-        hasTransformToMobxFlowDecorators(node.decorators) &&
-        node.body
-      ) {
-        if (!isAsyncFunction(node)) {
-          throw new Error(
-            errorMessage(`Could not resolve expression as async function: ${node.getFullText()}`),
-          );
-        }
-
+      if (ts.isArrowFunction(fn) || ts.isFunctionExpression(fn)) {
         transformed = true;
 
+        const name = resolveFunctionName(node, fn);
         const newFunctionBlock = createNewFunctionBlock(
-          flowIdenfitier,
-          ts.isIdentifier(node.name) ? node.name : undefined,
-          visitor(node.body) as ts.Block,
+          flowExpression,
+          name,
+          ts.visitEachChild(fn.body, visitor, context),
           context,
         );
 
-        return transformMethodDeclaration(node, newFunctionBlock);
+        return transformFunction(fn, newFunctionBlock);
       }
-
-      if (
-        ts.isPropertyDeclaration(node) &&
-        hasTransformToMobxFlowDecorators(node.decorators) &&
-        node.initializer
-      ) {
-        const fn = node.initializer;
-
-        if (!isAsyncFunction(fn)) {
-          throw new Error(
-            errorMessage(`Could not resolve expression as async function: ${node.getFullText()}`),
-          );
-        }
-
-        transformed = true;
-
-        if (ts.isArrowFunction(fn) || ts.isFunctionExpression(fn)) {
-          const newFunctionBlock = createNewFunctionBlock(
-            flowIdenfitier,
-            ts.isIdentifier(node.name) ? node.name : undefined,
-            visitor(fn.body) as ts.ConciseBody,
-            context,
-          );
-
-          return transformPropertyDeclaration(node, transformFunction(fn, newFunctionBlock));
-        }
-      }
-
-      return ts.visitEachChild(node, visitor, context);
-    };
-
-    const convertToFlowResult = ts.visitEachChild(source, visitor, context);
-
-    // if there's anything converted, we need to add "import {flow} from 'mobx'"
-    if (transformed) {
-      const importFlowStatement = ts.createImportDeclaration(
-        undefined,
-        undefined,
-        ts.createImportClause(
-          undefined,
-          ts.createNamedImports([
-            ts.createImportSpecifier(ts.createIdentifier('flow'), flowIdenfitier),
-          ]),
-        ),
-        ts.createLiteral(mobxPackage),
-      );
-      return ts.updateSourceFileNode(
-        convertToFlowResult,
-        [importFlowStatement, ...convertToFlowResult.statements],
-        convertToFlowResult.isDeclarationFile,
-        convertToFlowResult.referencedFiles,
-        convertToFlowResult.typeReferenceDirectives,
-        convertToFlowResult.hasNoDefaultLib,
-        convertToFlowResult.libReferenceDirectives,
-      );
     }
 
-    return convertToFlowResult;
+    if (
+      ts.isMethodDeclaration(node) &&
+      hasTransformToMobxFlowDecorators(node.decorators) &&
+      node.body
+    ) {
+      if (!isAsyncFunction(node)) {
+        throw new Error(
+          errorMessage(`Could not resolve expression as async function: ${node.getFullText()}`),
+        );
+      }
+
+      transformed = true;
+
+      const newFunctionBlock = createNewFunctionBlock(
+        flowExpression,
+        ts.isIdentifier(node.name) ? node.name : undefined,
+        ts.visitEachChild(node.body, visitor, context),
+        context,
+      );
+
+      return transformMethodDeclaration(node, newFunctionBlock);
+    }
+
+    if (
+      ts.isPropertyDeclaration(node) &&
+      hasTransformToMobxFlowDecorators(node.decorators) &&
+      node.initializer
+    ) {
+      const fn = node.initializer;
+
+      if (!isAsyncFunction(fn)) {
+        throw new Error(
+          errorMessage(`Could not resolve expression as async function: ${node.getFullText()}`),
+        );
+      }
+
+      if (ts.isArrowFunction(fn) || ts.isFunctionExpression(fn)) {
+        transformed = true;
+        const newFunctionBlock = createNewFunctionBlock(
+          flowExpression,
+          ts.isIdentifier(node.name) ? node.name : undefined,
+          ts.visitEachChild(fn.body, visitor, context),
+          context,
+        );
+
+        return transformPropertyDeclaration(node, transformFunction(fn, newFunctionBlock));
+      }
+    }
+
+    return ts.visitEachChild(node, visitor, context);
   };
+
+  const convertToFlowResult = ts.visitEachChild(sourceWithMobxImport, visitor, context);
+
+  if (transformed) {
+    return convertToFlowResult;
+  }
+
+  return source;
 }
 
 function createNewFunctionBlock(
-  flowIdenfitier: ts.Identifier,
+  flowIdentifier: ts.Expression,
   name: ts.Identifier | undefined,
   body: ts.ConciseBody,
   context: ts.TransformationContext,
@@ -152,7 +140,33 @@ function createNewFunctionBlock(
 
   const convertedBody = replaceYieldAndCheckNested(body) as ts.ConciseBody;
 
-  return createWrappedFunctionBlock(flowIdenfitier, name, convertedBody);
+  return createWrappedFunctionBlock(flowIdentifier, name, convertedBody);
+}
+
+/**
+ * adds `import * as mobx_1 from 'mobx';`
+ * It is possible to try to reuse and existing import statement, but adding one seems simpler for now
+ */
+function addImportMobxStatement(
+  source: ts.SourceFile,
+  mobxPackage: string,
+  mobxNamespaceImport: ts.Identifier,
+) {
+  const importFlowStatement = ts.createImportDeclaration(
+    undefined,
+    undefined,
+    ts.createImportClause(undefined, ts.createNamespaceImport(mobxNamespaceImport)),
+    ts.createLiteral(mobxPackage),
+  );
+  return ts.updateSourceFileNode(
+    source,
+    [importFlowStatement, ...source.statements],
+    source.isDeclarationFile,
+    source.referencedFiles,
+    source.typeReferenceDirectives,
+    source.hasNoDefaultLib,
+    source.libReferenceDirectives,
+  );
 }
 
 /**
@@ -261,7 +275,7 @@ return flow_1(function*() {
 ```
  */
 function createWrappedFunctionBlock(
-  flowIdenfitier: ts.Identifier,
+  flowExpression: ts.Expression,
   name: ts.Identifier | undefined,
   convertedBody: ts.ConciseBody,
 ) {
@@ -269,7 +283,7 @@ function createWrappedFunctionBlock(
     ts.createReturn(
       ts.createCall(
         ts.createPropertyAccess(
-          ts.createCall(flowIdenfitier, undefined, [
+          ts.createCall(flowExpression, undefined, [
             ts.createFunctionExpression(
               undefined,
               ts.createToken(ts.SyntaxKind.AsteriskToken),
