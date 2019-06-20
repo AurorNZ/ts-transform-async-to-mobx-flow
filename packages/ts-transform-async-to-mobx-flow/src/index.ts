@@ -290,7 +290,7 @@ function createWrappedFunctionBlock(
             ts.createFunctionExpression(
               undefined,
               ts.createToken(ts.SyntaxKind.AsteriskToken),
-              name,
+              name ? ts.createOptimisticUniqueName(`${name.text}_mobxFlow`) : undefined,
               undefined,
               undefined,
               undefined,
