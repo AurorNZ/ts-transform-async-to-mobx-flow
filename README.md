@@ -1,6 +1,7 @@
 # ts-transform-async-to-mobx-flow
 
 [![npm](https://img.shields.io/npm/v/ts-transform-async-to-mobx-flow.svg)](https://www.npmjs.com/package/ts-transform-async-to-mobx-flow)
+[![Build Status](https://travis-ci.com/AurorNZ/ts-transform-async-to-mobx-flow.svg?branch=master)](https://travis-ci.com/AurorNZ/ts-transform-async-to-mobx-flow)
 
 Converts typescript async functions into generators wrapped with mobx.flow.
 Inspired by [babel-plugin-mobx-async-action](https://github.com/Strate/babel-plugin-mobx-async-action) and [ts-plugin-mst-async-action](https://github.com/newraina/ts-plugin-mst-async-action)
