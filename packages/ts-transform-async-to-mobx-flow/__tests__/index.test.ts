@@ -110,7 +110,7 @@ const fn = transformToMobxFlow(async input => {
 import * as mobx_2 from "mobx";
 import * as mobx from 'mobx';
 let mobx_1 = '';
-const fn = (input) => { return mobx_2.flow(function* fn() {
+const fn = (input) => { return mobx_2.flow(function* fn_mobxFlow() {
     return yield Promise.resolve(input);
 }).call(this); };
 `;
@@ -124,22 +124,11 @@ const fn = transformToMobxFlow(async input => {
   return await Promise.resolve(input);
 });
   `;
-    const expectedOutput = `
-var _this = this;
-var mobx = require("mobx");
-var fn = function (input) { return mobx.flow(function fn() {
-    return __generator(this, function (_a) {
-        switch (_a.label) {
-            case 0: return [4 /*yield*/, Promise.resolve(input)];
-            case 1: return [2 /*return*/, _a.sent()];
-        }
-    });
-}).call(_this); };
-  `;
   
-    verifyOutput(getTranspiledOutput(source, ts.ScriptTarget.ES5), expectedOutput);
+  const result = getTranspiledOutput(source, ts.ScriptTarget.ES5);
+  expect(result).toMatchSnapshot();
 });
- 
+
 describe('Ignore transforming nested functions #1', () => {
   // https://github.com/AurorNZ/ts-transform-async-to-mobx-flow/issues/1
 
@@ -155,10 +144,10 @@ const fn = transformToMobxFlow(async (input: number) => {
   await nestedFunc();
   await nestedFunc2();
 });
-    `; 
-      const expectedOutput = `
+    `;
+    const expectedOutput = `
 import * as mobx from "mobx";
-const fn = (input: number) => { return mobx.flow(function* fn() {
+const fn = (input: number) => { return mobx.flow(function* fn_mobxFlow() {
     var nestedFunc = async () => {
         return await Promise.resolve(input);
     };
@@ -169,12 +158,11 @@ const fn = (input: number) => { return mobx.flow(function* fn() {
     yield nestedFunc2();
 }).call(this); };
     `;
-    
-      verifyOutput(getTransformedOutput(source), expectedOutput);
+
+    verifyOutput(getTransformedOutput(source), expectedOutput);
   });
 
   it('Class member function', () => {
-
     const source = `
 class Test {
   @transformToMobxFlow
@@ -190,10 +178,10 @@ class Test {
   }
 }
     `;
-      const expectedOutput = `
+    const expectedOutput = `
 import * as mobx from "mobx";
 class Test {
-    func(input: number) { return mobx.flow(function* func() {
+    func(input: number) { return mobx.flow(function* func_mobxFlow() {
         var nestedFunc = async () => {
             return await Promise.resolve(input);
         };
@@ -205,11 +193,36 @@ class Test {
     }).call(this); }
 }
     `;
-    
-      verifyOutput(getTransformedOutput(source), expectedOutput);
-  });
 
-})
+    verifyOutput(getTransformedOutput(source), expectedOutput);
+  });
+});
+
+it('Generator function should use unique name #2', () => {
+  // https://github.com/AurorNZ/ts-transform-async-to-mobx-flow/issues/2
+
+  const source = `
+import { someFunc } from './someFile';
+
+class SomeClass {
+  @transformToMobxFlow
+  someFunc = async () => {
+    await someFunc();
+  }
+}
+`;
+  const expectedOutput = `
+import * as mobx from \"mobx\";
+import { someFunc } from './someFile';
+class SomeClass {
+    someFunc = () => { return mobx.flow(function* someFunc_mobxFlow() {
+        yield someFunc();
+    }).call(this); };
+}
+`;
+
+  verifyOutput(getTransformedOutput(source), expectedOutput);
+});
 
 function verifyOutput(transformedOutput: string, expectedOutput: string) {
   expect(removeEmptyLines(transformedOutput)).toBe(removeEmptyLines(expectedOutput));

@@ -4,20 +4,20 @@ exports[`Converts function marked as transformToMobxFlow 1`] = `
 "import * as mobx from \\"mobx\\";
 /// <reference path=\\"../../transformToMobxFlow.d.ts\\" />
 declare let randomDecorator: any;
-export const fn = (input) => { return mobx.flow(function* fn() {
+export const fn = (input) => { return mobx.flow(function* fn_mobxFlow() {
     return yield Promise.resolve(input);
 }).call(this); };
-export const fn2 = function test(input) { return mobx.flow(function* test() {
+export const fn2 = function test(input) { return mobx.flow(function* test_mobxFlow() {
     return yield Promise.resolve(input);
 }).call(this); };
-export const fn3 = function (input) { return mobx.flow(function* fn3() {
+export const fn3 = function (input) { return mobx.flow(function* fn3_mobxFlow() {
     return yield Promise.resolve(input);
 }).call(this); };
 export class Test {
     test: number = 0;
     constructor() {
-        var nestedFlow = () => { return mobx.flow(function* nestedFlow() {
-            var anotherNestedFlow = () => { return mobx.flow(function* anotherNestedFlow() {
+        var nestedFlow = () => { return mobx.flow(function* nestedFlow_mobxFlow() {
+            var anotherNestedFlow = () => { return mobx.flow(function* anotherNestedFlow_mobxFlow() {
                 this.test = 5;
                 yield Promise.resolve(100);
             }).call(this); };
@@ -25,16 +25,16 @@ export class Test {
             yield anotherNestedFlow();
         }).call(this); };
     }
-    func() { return mobx.flow(function* func() {
+    func() { return mobx.flow(function* func_mobxFlow() {
         this.test = 5;
         yield Promise.resolve(100);
     }).call(this); }
-    funcBound = () => { return mobx.flow(function* funcBound() {
+    funcBound = () => { return mobx.flow(function* funcBound_mobxFlow() {
         this.test = 5;
         yield Promise.resolve(100);
     }).call(this); };
     @randomDecorator
-    funcNonBound = function (this: Test) { return mobx.flow(function* funcNonBound() {
+    funcNonBound = function (this: Test) { return mobx.flow(function* funcNonBound_mobxFlow() {
         this.test = 5;
         yield Promise.resolve(100);
     }).call(this); };
@@ -74,5 +74,19 @@ export class Test {
         await Promise.resolve(100);
     };
 }
+"
+`;
+
+exports[`Transpiled correctly to ES5 1`] = `
+"var _this = this;
+var mobx = require(\\"mobx\\");
+var fn = function (input) { return mobx.flow(function fn_mobxFlow() {
+    return __generator(this, function (_a) {
+        switch (_a.label) {
+            case 0: return [4 /*yield*/, Promise.resolve(input)];
+            case 1: return [2 /*return*/, _a.sent()];
+        }
+    });
+}).call(_this); };
 "
 `;
