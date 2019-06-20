@@ -133,6 +133,9 @@ function createNewFunctionBlock(
   const replaceYieldAndCheckNested: ts.Visitor = node => {
     if (ts.isAwaitExpression(node)) {
       return ts.createYield(node.expression);
+    } else if (ts.isFunctionLike(node)) {
+      // do not visit nested functions
+      return node;
     }
 
     return ts.visitEachChild(node, replaceYieldAndCheckNested, context);

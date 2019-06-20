@@ -138,6 +138,77 @@ var fn = function (input) { return mobx.flow(function fn() {
   `;
   
     verifyOutput(getTranspiledOutput(source, ts.ScriptTarget.ES5), expectedOutput);
+});
+ 
+describe('Ignore transforming nested functions #1', () => {
+  // https://github.com/AurorNZ/ts-transform-async-to-mobx-flow/issues/1
+
+  it('Inline function', () => {
+    const source = `
+const fn = transformToMobxFlow(async (input: number) => {
+  var nestedFunc = async () => {
+    return await Promise.resolve(input);
+  };
+  async function nestedFunc2() {
+    return await Promise.resolve(input);
+  }
+  await nestedFunc();
+  await nestedFunc2();
+});
+    `; 
+      const expectedOutput = `
+import * as mobx from "mobx";
+const fn = (input: number) => { return mobx.flow(function* fn() {
+    var nestedFunc = async () => {
+        return await Promise.resolve(input);
+    };
+    async function nestedFunc2() {
+        return await Promise.resolve(input);
+    }
+    yield nestedFunc();
+    yield nestedFunc2();
+}).call(this); };
+    `;
+    
+      verifyOutput(getTransformedOutput(source), expectedOutput);
+  });
+
+  it('Class member function', () => {
+
+    const source = `
+class Test {
+  @transformToMobxFlow
+  async func(input: number) {
+    var nestedFunc = async () => {
+      return await Promise.resolve(input);
+    };
+    async function nestedFunc2() {
+      return await Promise.resolve(input);
+    }
+    await nestedFunc();
+    await nestedFunc2();
+  }
+}
+    `;
+      const expectedOutput = `
+import * as mobx from "mobx";
+class Test {
+    func(input: number) { return mobx.flow(function* func() {
+        var nestedFunc = async () => {
+            return await Promise.resolve(input);
+        };
+        async function nestedFunc2() {
+            return await Promise.resolve(input);
+        }
+        yield nestedFunc();
+        yield nestedFunc2();
+    }).call(this); }
+}
+    `;
+    
+      verifyOutput(getTransformedOutput(source), expectedOutput);
+  });
+
 })
 
 function verifyOutput(transformedOutput: string, expectedOutput: string) {
