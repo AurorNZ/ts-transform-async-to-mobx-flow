@@ -1,13 +1,13 @@
 /// <reference path="../../transformToMobxFlow.d.ts" />
 declare let randomDecorator: any;
 
-export const fn = transformToMobxFlow(async input => {
+export const fn = transformToMobxFlow(async (input) => {
   return await Promise.resolve(input);
 });
 export const fn2 = transformToMobxFlow(async function test(input) {
   return await Promise.resolve(input);
 });
-export const fn3 = transformToMobxFlow(async function(input) {
+export const fn3 = transformToMobxFlow(async function (input) {
   return await Promise.resolve(input);
 });
 export class Test {
@@ -30,14 +30,33 @@ export class Test {
   }
 
   @transformToMobxFlow
+  public async funcWithModifier() {
+    this.test = 5;
+    await Promise.resolve(100);
+  }
+
+  @transformToMobxFlow
   funcBound = async () => {
+    this.test = 5;
+    await Promise.resolve(100);
+  };
+
+  @transformToMobxFlow
+  public funcBoundWithModifier = async () => {
     this.test = 5;
     await Promise.resolve(100);
   };
 
   @randomDecorator
   @transformToMobxFlow
-  funcNonBound = async function(this: Test) {
+  funcNonBound = async function (this: Test) {
+    this.test = 5;
+    await Promise.resolve(100);
+  };
+
+  @randomDecorator
+  @transformToMobxFlow
+  public funcNonBoundWithModifier = async function (this: Test) {
     this.test = 5;
     await Promise.resolve(100);
   };

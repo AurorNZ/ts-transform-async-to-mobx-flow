@@ -22,12 +22,27 @@ export class Test {
     await Promise.resolve(100);
   }
 
+  public async funcWithModifier() {
+    this.test = 5;
+    await Promise.resolve(100);
+  }
+
   funcBound = async () => {
     this.test = 5;
     await Promise.resolve(100);
   };
 
-  funcNonBound = async function(this: Test) {
+  public funcBoundWithModifier = async () => {
+    this.test = 5;
+    await Promise.resolve(100);
+  };
+
+  funcNonBound = async function (this: Test) {
+    this.test = 5;
+    await Promise.resolve(100);
+  };
+
+  public funcNonBoundWithModifier = async function (this: Test) {
     this.test = 5;
     await Promise.resolve(100);
   };

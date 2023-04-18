@@ -1,6 +1,6 @@
 // Jest Snapshot v1, https://goo.gl/fbAQLP
 
-exports[`Converts function marked as transformToMobxFlow 1`] = `
+exports[`Typescript version: TypeScript-4 Converts function marked as transformToMobxFlow 1`] = `
 "import * as mobx from \\"mobx\\";
 /// <reference path=\\"../../transformToMobxFlow.d.ts\\" />
 declare let randomDecorator: any;
@@ -29,7 +29,15 @@ export class Test {
         this.test = 5;
         yield Promise.resolve(100);
     }).call(this); }
+    public funcWithModifier() { return mobx.flow(function* funcWithModifier_mobxFlow() {
+        this.test = 5;
+        yield Promise.resolve(100);
+    }).call(this); }
     funcBound = () => { return mobx.flow(function* funcBound_mobxFlow() {
+        this.test = 5;
+        yield Promise.resolve(100);
+    }).call(this); };
+    public funcBoundWithModifier = () => { return mobx.flow(function* funcBoundWithModifier_mobxFlow() {
         this.test = 5;
         yield Promise.resolve(100);
     }).call(this); };
@@ -38,11 +46,16 @@ export class Test {
         this.test = 5;
         yield Promise.resolve(100);
     }).call(this); };
+    @randomDecorator
+    public funcNonBoundWithModifier = function (this: Test) { return mobx.flow(function* funcNonBoundWithModifier_mobxFlow() {
+        this.test = 5;
+        yield Promise.resolve(100);
+    }).call(this); };
 }
 "
 `;
 
-exports[`Does not convert function not marked as transformToMobxFlow 1`] = `
+exports[`Typescript version: TypeScript-4 Does not convert function not marked as transformToMobxFlow 1`] = `
 "export async function fn(input: string) {
     return await Promise.resolve(input);
 }
@@ -65,7 +78,15 @@ export class Test {
         this.test = 5;
         await Promise.resolve(100);
     }
+    public async funcWithModifier() {
+        this.test = 5;
+        await Promise.resolve(100);
+    }
     funcBound = async () => {
+        this.test = 5;
+        await Promise.resolve(100);
+    };
+    public funcBoundWithModifier = async () => {
         this.test = 5;
         await Promise.resolve(100);
     };
@@ -73,11 +94,131 @@ export class Test {
         this.test = 5;
         await Promise.resolve(100);
     };
+    public funcNonBoundWithModifier = async function (this: Test) {
+        this.test = 5;
+        await Promise.resolve(100);
+    };
 }
 "
 `;
 
-exports[`Transpiled correctly to ES5 1`] = `
+exports[`Typescript version: TypeScript-4 Transpiled correctly to ES5 1`] = `
+"var _this = this;
+var mobx = require(\\"mobx\\");
+var fn = function (input) { return mobx.flow(function fn_mobxFlow() {
+    return __generator(this, function (_a) {
+        switch (_a.label) {
+            case 0: return [4 /*yield*/, Promise.resolve(input)];
+            case 1: return [2 /*return*/, _a.sent()];
+        }
+    });
+}).call(_this); };
+"
+`;
+
+exports[`Typescript version: TypeScript-5 Converts function marked as transformToMobxFlow 1`] = `
+"import * as mobx from \\"mobx\\";
+/// <reference path=\\"../../transformToMobxFlow.d.ts\\" />
+declare let randomDecorator: any;
+export const fn = (input) => { return mobx.flow(function* fn_mobxFlow() {
+    return yield Promise.resolve(input);
+}).call(this); };
+export const fn2 = function test(input) { return mobx.flow(function* test_mobxFlow() {
+    return yield Promise.resolve(input);
+}).call(this); };
+export const fn3 = function (input) { return mobx.flow(function* fn3_mobxFlow() {
+    return yield Promise.resolve(input);
+}).call(this); };
+export class Test {
+    test: number = 0;
+    constructor() {
+        var nestedFlow = () => { return mobx.flow(function* nestedFlow_mobxFlow() {
+            var anotherNestedFlow = () => { return mobx.flow(function* anotherNestedFlow_mobxFlow() {
+                this.test = 5;
+                yield Promise.resolve(100);
+            }).call(this); };
+            this.test = 5;
+            yield anotherNestedFlow();
+        }).call(this); };
+    }
+    func() { return mobx.flow(function* func_mobxFlow() {
+        this.test = 5;
+        yield Promise.resolve(100);
+    }).call(this); }
+    public funcWithModifier() { return mobx.flow(function* funcWithModifier_mobxFlow() {
+        this.test = 5;
+        yield Promise.resolve(100);
+    }).call(this); }
+    funcBound = () => { return mobx.flow(function* funcBound_mobxFlow() {
+        this.test = 5;
+        yield Promise.resolve(100);
+    }).call(this); };
+    public funcBoundWithModifier = () => { return mobx.flow(function* funcBoundWithModifier_mobxFlow() {
+        this.test = 5;
+        yield Promise.resolve(100);
+    }).call(this); };
+    @randomDecorator
+    funcNonBound = function (this: Test) { return mobx.flow(function* funcNonBound_mobxFlow() {
+        this.test = 5;
+        yield Promise.resolve(100);
+    }).call(this); };
+    @randomDecorator
+    public funcNonBoundWithModifier = function (this: Test) { return mobx.flow(function* funcNonBoundWithModifier_mobxFlow() {
+        this.test = 5;
+        yield Promise.resolve(100);
+    }).call(this); };
+}
+"
+`;
+
+exports[`Typescript version: TypeScript-5 Does not convert function not marked as transformToMobxFlow 1`] = `
+"export async function fn(input: string) {
+    return await Promise.resolve(input);
+}
+export const fn2 = async (input: string) => {
+    return await Promise.resolve(input);
+};
+export class Test {
+    test: number = 0;
+    constructor() {
+        var nestedFlow = async () => {
+            var anotherNestedFlow = async () => {
+                this.test = 5;
+                await Promise.resolve(100);
+            };
+            this.test = 5;
+            await anotherNestedFlow();
+        };
+    }
+    async func() {
+        this.test = 5;
+        await Promise.resolve(100);
+    }
+    public async funcWithModifier() {
+        this.test = 5;
+        await Promise.resolve(100);
+    }
+    funcBound = async () => {
+        this.test = 5;
+        await Promise.resolve(100);
+    };
+    public funcBoundWithModifier = async () => {
+        this.test = 5;
+        await Promise.resolve(100);
+    };
+    funcNonBound = async function (this: Test) {
+        this.test = 5;
+        await Promise.resolve(100);
+    };
+    public funcNonBoundWithModifier = async function (this: Test) {
+        this.test = 5;
+        await Promise.resolve(100);
+    };
+}
+"
+`;
+
+exports[`Typescript version: TypeScript-5 Transpiled correctly to ES5 1`] = `
 "var _this = this;
 var mobx = require(\\"mobx\\");
 var fn = function (input) { return mobx.flow(function fn_mobxFlow() {
