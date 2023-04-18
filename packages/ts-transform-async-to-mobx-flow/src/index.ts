@@ -24,7 +24,7 @@ export const version = 1;
 export default function createTransformer({
   mobxPackage = 'mobx',
 }: Partial<Options> = {}): ts.TransformerFactory<ts.SourceFile> {
-  return context => file => visitSourceFile(mobxPackage, file, context);
+  return (context) => (file) => visitSourceFile(mobxPackage, file, context);
 }
 
 function visitSourceFile(
@@ -32,13 +32,19 @@ function visitSourceFile(
   source: ts.SourceFile,
   context: ts.TransformationContext,
 ): ts.SourceFile {
-  const mobxNamespaceImport = ts.createFileLevelUniqueName('mobx');
-  const flowExpression = ts.createPropertyAccess(mobxNamespaceImport, ts.createIdentifier('flow'));
+  const mobxNamespaceImport = ts.factory.createUniqueName(
+    'mobx',
+    ts.GeneratedIdentifierFlags.Optimistic | ts.GeneratedIdentifierFlags.FileLevel,
+  );
+  const flowExpression = ts.factory.createPropertyAccessExpression(
+    mobxNamespaceImport,
+    ts.factory.createIdentifier('flow'),
+  );
   let transformed = false;
 
   const sourceWithMobxImport = addImportMobxStatement(source, mobxPackage, mobxNamespaceImport);
 
-  const visitor: ts.Visitor = node => {
+  const visitor: ts.Visitor = (node) => {
     if (checkTransformToMobxFlowCallExpression(node)) {
       const fn = node.arguments[0];
 
@@ -63,11 +69,7 @@ function visitSourceFile(
       }
     }
 
-    if (
-      ts.isMethodDeclaration(node) &&
-      hasTransformToMobxFlowDecorators(node.decorators) &&
-      node.body
-    ) {
+    if (ts.isMethodDeclaration(node) && hasTransformToMobxFlowDecorators(node) && node.body) {
       if (!isAsyncFunction(node)) {
         throw new Error(
           errorMessage(`Could not resolve expression as async function: ${node.getFullText()}`),
@@ -88,7 +90,7 @@ function visitSourceFile(
 
     if (
       ts.isPropertyDeclaration(node) &&
-      hasTransformToMobxFlowDecorators(node.decorators) &&
+      hasTransformToMobxFlowDecorators(node) &&
       node.initializer
     ) {
       const fn = node.initializer;
@@ -130,9 +132,9 @@ function createNewFunctionBlock(
   body: ts.ConciseBody,
   context: ts.TransformationContext,
 ) {
-  const replaceYieldAndCheckNested: ts.Visitor = node => {
+  const replaceYieldAndCheckNested: ts.Visitor = (node) => {
     if (ts.isAwaitExpression(node)) {
-      return ts.createYield(node.expression);
+      return ts.factory.createYieldExpression(undefined, node.expression);
     } else if (ts.isFunctionLike(node)) {
       // do not visit nested functions
       return node;
@@ -155,13 +157,31 @@ function addImportMobxStatement(
   mobxPackage: string,
   mobxNamespaceImport: ts.Identifier,
 ) {
-  const importFlowStatement = ts.createImportDeclaration(
-    undefined,
-    undefined,
-    ts.createImportClause(undefined, ts.createNamespaceImport(mobxNamespaceImport)),
-    ts.createLiteral(mobxPackage),
-  );
-  return ts.updateSourceFileNode(
+  let importFlowStatement: ts.ImportDeclaration;
+  if (typescript_4_7_or_lower()) {
+    importFlowStatement = (ts.factory as any).createImportDeclaration(
+      undefined,
+      undefined,
+      ts.factory.createImportClause(
+        false,
+        undefined,
+        ts.factory.createNamespaceImport(mobxNamespaceImport),
+      ),
+      ts.factory.createStringLiteral(mobxPackage),
+    );
+  } else {
+    importFlowStatement = ts.factory.createImportDeclaration(
+      undefined,
+      ts.factory.createImportClause(
+        false,
+        undefined,
+        ts.factory.createNamespaceImport(mobxNamespaceImport),
+      ),
+      ts.factory.createStringLiteral(mobxPackage),
+    );
+  }
+
+  return ts.factory.updateSourceFile(
     source,
     [importFlowStatement, ...source.statements],
     source.isDeclarationFile,
@@ -201,9 +221,10 @@ function transformFunction(
   newFunctionBlock: ts.Block,
 ) {
   if (ts.isArrowFunction(fn)) {
-    return ts.updateArrowFunction(
+    return ts.factory.updateArrowFunction(
       fn,
-      filterOutAsyncModifier(fn.modifiers),
+      // @ts-expect-error
+      filterOutAsyncModifierAndTransformToMobxFlow(fn.modifiers),
       fn.typeParameters,
       fn.parameters,
       fn.type,
@@ -211,9 +232,10 @@ function transformFunction(
       newFunctionBlock,
     );
   } else {
-    return ts.updateFunctionExpression(
+    return ts.factory.updateFunctionExpression(
       fn,
-      filterOutAsyncModifier(fn.modifiers),
+      // @ts-expect-error
+      filterOutAsyncModifierAndTransformToMobxFlow(fn.modifiers),
       undefined,
       fn.name,
       fn.typeParameters,
@@ -228,20 +250,36 @@ function transformFunction(
  * A helper to update method declaration and strip the async keyword from modifiers
  */
 function transformMethodDeclaration(node: ts.MethodDeclaration, newFunctionBlock: ts.Block) {
-  const otherDecorators = filterOutTransformToMobxFlowDecorators(node.decorators);
-
-  return ts.updateMethod(
-    node,
-    otherDecorators,
-    filterOutAsyncModifier(node.modifiers),
-    node.asteriskToken,
-    node.name,
-    node.questionToken,
-    node.typeParameters,
-    node.parameters,
-    node.type,
-    newFunctionBlock,
+  const newModifiers = filterOutAsyncModifierAndTransformToMobxFlow(
+    (node.modifiers ?? []).concat((node as any).decorators ?? []),
   );
+
+  if (typescript_4_7_or_lower()) {
+    return (ts.factory as any).updateMethodDeclaration(
+      node,
+      newModifiers?.filter((x) => ts.isDecorator(x)),
+      newModifiers?.filter((x) => ts.isModifier(x)),
+      node.asteriskToken,
+      node.name,
+      node.questionToken,
+      node.typeParameters,
+      node.parameters,
+      node.type,
+      newFunctionBlock,
+    );
+  } else {
+    return ts.factory.updateMethodDeclaration(
+      node,
+      newModifiers,
+      node.asteriskToken,
+      node.name,
+      node.questionToken,
+      node.typeParameters,
+      node.parameters,
+      node.type,
+      newFunctionBlock,
+    );
+  }
 }
 
 /**
@@ -251,17 +289,30 @@ function transformPropertyDeclaration(
   node: ts.PropertyDeclaration,
   newFunctionBlock: ts.ArrowFunction | ts.FunctionExpression,
 ) {
-  const otherDecorators = filterOutTransformToMobxFlowDecorators(node.decorators);
-
-  return ts.updateProperty(
-    node,
-    otherDecorators,
-    filterOutAsyncModifier(node.modifiers),
-    node.name,
-    node.questionToken,
-    node.type,
-    newFunctionBlock,
+  const newModifiers = filterOutAsyncModifierAndTransformToMobxFlow(
+    (node.modifiers ?? []).concat((node as any).decorators ?? []),
   );
+
+  if (typescript_4_7_or_lower()) {
+    return (ts.factory as any).updatePropertyDeclaration(
+      node,
+      newModifiers?.filter((x) => ts.isDecorator(x)),
+      newModifiers?.filter((x) => ts.isModifier(x)),
+      node.name,
+      node.questionToken,
+      node.type,
+      newFunctionBlock,
+    );
+  } else {
+    return ts.factory.updatePropertyDeclaration(
+      node,
+      newModifiers,
+      node.name,
+      node.questionToken,
+      node.type,
+      newFunctionBlock,
+    );
+  }
 }
 
 /**
@@ -282,27 +333,32 @@ function createWrappedFunctionBlock(
   name: ts.Identifier | undefined,
   convertedBody: ts.ConciseBody,
 ) {
-  return ts.createBlock([
-    ts.createReturn(
-      ts.createCall(
-        ts.createPropertyAccess(
-          ts.createCall(flowExpression, undefined, [
-            ts.createFunctionExpression(
+  return ts.factory.createBlock([
+    ts.factory.createReturnStatement(
+      ts.factory.createCallExpression(
+        ts.factory.createPropertyAccessExpression(
+          ts.factory.createCallExpression(flowExpression, undefined, [
+            ts.factory.createFunctionExpression(
               undefined,
-              ts.createToken(ts.SyntaxKind.AsteriskToken),
-              name ? ts.createOptimisticUniqueName(`${name.text}_mobxFlow`) : undefined,
+              ts.factory.createToken(ts.SyntaxKind.AsteriskToken),
+              name
+                ? ts.factory.createUniqueName(
+                    `${name.text}_mobxFlow`,
+                    ts.GeneratedIdentifierFlags.Optimistic,
+                  )
+                : undefined,
               undefined,
               undefined,
               undefined,
               ts.isBlock(convertedBody)
                 ? convertedBody
-                : ts.createBlock([ts.createStatement(convertedBody)]),
+                : ts.factory.createBlock([ts.factory.createExpressionStatement(convertedBody)]),
             ),
           ]),
           'call',
         ),
         undefined,
-        [ts.createThis()],
+        [ts.factory.createThis()],
       ),
     ),
   ]);
@@ -338,11 +394,15 @@ function resolveFunctionName(node: ts.Node, fn: ts.FunctionExpression | ts.Arrow
   return name;
 }
 
-function hasTransformToMobxFlowDecorators(decorators: ts.NodeArray<ts.Decorator> | undefined) {
+function hasTransformToMobxFlowDecorators(node: ts.MethodDeclaration | ts.PropertyDeclaration) {
+  const modifiers = (node.modifiers ?? []).concat((node as any).decorators ?? []);
   if (
-    decorators &&
-    decorators.filter(
-      x => ts.isIdentifier(x.expression) && x.expression.text === transformToMobxFlow,
+    modifiers &&
+    modifiers.filter(
+      (x) =>
+        ts.isDecorator(x) &&
+        ts.isIdentifier(x.expression) &&
+        x.expression.text === transformToMobxFlow,
     ).length > 0
   ) {
     return true;
@@ -351,37 +411,26 @@ function hasTransformToMobxFlowDecorators(decorators: ts.NodeArray<ts.Decorator>
 }
 
 /**
- * Returns all the decorators except for @transformToMobxFlow
+ * Returns all the modifiers except for `async` and @transformToMobxFlow decorator
  * Ensures to return undefined if the array is empty
  */
-function filterOutTransformToMobxFlowDecorators(
-  decorators: ts.NodeArray<ts.Decorator> | undefined,
-): ts.Decorator[] | undefined {
+function filterOutAsyncModifierAndTransformToMobxFlow(
+  modifiers: ts.ModifierLike[] | undefined,
+): ts.ModifierLike[] | undefined {
   return (
-    decorators &&
-    decorators.reduce<ts.Decorator[] | undefined>((acc, x) => {
-      // skip @transformToMobxFlow decorator
-      if (ts.isIdentifier(x.expression) && x.expression.text === transformToMobxFlow) {
+    modifiers &&
+    modifiers.reduce<ts.ModifierLike[] | undefined>((acc, x) => {
+      // skip async modifier
+      if (x.kind === ts.SyntaxKind.AsyncKeyword) {
         return acc;
       }
 
-      return acc ? [...acc, x] : [x];
-    }, undefined)
-  );
-}
-
-/**
- * Returns all the modifiers except for async
- * Ensures to return undefined if the array is empty
- */
-function filterOutAsyncModifier(
-  modifiers: ts.NodeArray<ts.Modifier> | undefined,
-): ts.Modifier[] | undefined {
-  return (
-    modifiers &&
-    modifiers.reduce<ts.Modifier[] | undefined>((acc, x) => {
-      // skip async modifier
-      if (x.kind === ts.SyntaxKind.AsyncKeyword) {
+      // skip @transformToMobxFlow decorator
+      if (
+        ts.isDecorator(x) &&
+        ts.isIdentifier(x.expression) &&
+        x.expression.text === transformToMobxFlow
+      ) {
         return acc;
       }
 
@@ -396,4 +445,14 @@ function isAsyncFunction(node: ts.Node): boolean {
 
 function errorMessage(message: string): string {
   return `[ts-transform-async-to-mobx-flow]: ${message}`;
+}
+
+/** Returns true when Typescript version is 4.7 or lower, version 4.8 had breaking api changes merging modifiers and decorators  */
+function typescript_4_7_or_lower() {
+  const [majorString, minorString] = ts.versionMajorMinor.split('.');
+
+  const major = parseInt(majorString);
+  const minor = parseInt(minorString);
+
+  return major < 4 || (major === 4 && minor <= 7);
 }
