@@ -6,16 +6,17 @@
   "main": "lib/index.js",
   "repository": "git@github.com:aurornz/ts-transform-async-to-mobx-flow.git",
   "scripts": {
-    "build": "rm -rf lib && ttsc"
+    "prepare": "ts-patch install -s",
+    "build": "rm -rf lib && tsc"
   },
   "bugs": {
     "url": "https://github.com/aurornz/ts-transform-async-to-mobx-flow/issues"
   },
   "devDependencies": {
-    "ttypescript": "^1.5.12",
-    "typescript": "^4.2.4"
+    "ts-patch": "^3.1.2",
+    "typescript": "^5.4.5"
   },
   "dependencies": {
-    "ts-transform-async-to-mobx-flow": "./packages/ts-transform-async-to-mobx-flow"
+    "ts-transform-async-to-mobx-flow": "workspace:ts-transform-async-to-mobx-flow"
   }
 }

@@ -52,6 +52,10 @@ declare function transformToMobxFlow<T extends (...args: any[]) => Promise<any>>
   propertyKey: string | symbol,
   descriptor: TypedPropertyDescriptor<T>,
 ): TypedPropertyDescriptor<T> | void;
+declare function transformToMobxFlow<TThis, TMethod extends (...args: any[]) => Promise<any>>(
+  target: TMethod,
+  context: ClassMethodDecoratorContext<TThis, TMethod>,
+): TMethod;
 
 /** 
  * Marks an `async` property function to transform into a generator function wrapped with `mobx.flow` 
@@ -82,3 +86,7 @@ class Test {
 ```
  */
 declare function transformToMobxFlow(target: Object, propertyKey: string | symbol): void;
+declare function transformToMobxFlow<TThis, TValue extends (...args: any[]) => Promise<any>>(
+  target: undefined,
+  context: ClassFieldDecoratorContext<TThis, TValue>,
+): void;
