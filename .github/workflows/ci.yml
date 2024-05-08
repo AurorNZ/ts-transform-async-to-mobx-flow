@@ -11,10 +11,14 @@ jobs:
     timeout-minutes: 10
 
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v4
 
-      - name: yarn install
-        run: yarn install --frozen-lockfile
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 8
 
-      - name: yarn test
-        run: yarn test
+      - name: pnpm install
+        run: pnpm install --frozen-lockfile
+
+      - name: pnpm test
+        run: pnpm test
