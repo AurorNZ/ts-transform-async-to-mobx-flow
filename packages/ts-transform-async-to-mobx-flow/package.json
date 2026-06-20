@@ -21,7 +21,7 @@
     "lib",
     "transformToMobxFlow.d.ts"
   ],
-  "repository": "git@github.com:aurornz/ts-transform-async-to-mobx-flow.git",
+  "repository": "git+https://github.com/aurornz/ts-transform-async-to-mobx-flow.git",
   "scripts": {
     "build": "rm -rf lib && tsc",
     "test": "jest",
