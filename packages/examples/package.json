@@ -4,7 +4,7 @@
   "author": "Auror <developers@auror.co>",
   "license": "MIT",
   "main": "lib/index.js",
-  "repository": "git@github.com:aurornz/ts-transform-async-to-mobx-flow.git",
+  "repository": "git+https://github.com/aurornz/ts-transform-async-to-mobx-flow.git",
   "scripts": {
     "prepare": "ts-patch install -s",
     "build": "rm -rf lib && tsc"

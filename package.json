@@ -1,7 +1,7 @@
 {
   "name": "ts-transform-async-to-mobx-flow",
   "description": "Typescript transformer for converting async functions into generators wrapped with mobx.flow",
-  "repository": "git@github.com:aurornz/ts-transform-async-to-mobx-flow.git",
+  "repository": "git+https://github.com/aurornz/ts-transform-async-to-mobx-flow.git",
   "author": "Auror <developers@auror.co>",
   "private": true,
   "license": "MIT",
